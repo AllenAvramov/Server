@@ -8,7 +8,7 @@ const port = 4000;
 // Allow Cross-Origin requests
 app.use(cors());
 
-// Sample data for portfolio
+// Sample data for portfolio6
 const sampleData = [
   {
     id: 1,

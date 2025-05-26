@@ -2,74 +2,54 @@
 
 const express = require('express');
 const cors = require('cors');
+const createDBConnection = require('./db');
 const app = express();
 const port = 4000;
 
-// Allow Cross-Origin requests
+// Create database connection pool
+const pool = createDBConnection();
+
+
+// Middleware
 app.use(cors());
+app.use(express.json());
 
-// Sample data for portfolio6
-const sampleData = [
-  {
-    id: 1,
-    title: 'Portfolio App',
-    description: 'full-stack e-commerce platform built with React and Node.js, Express',
-    technologies: ['React.js', "CSS", 'Node.js', 'Postgres', 'Express'],
-    github: 'https://github.com/AllenAvramov/portfolio',
-    live: 'https://rombarefoot.com',
-    image: 'https://via.placeholder.com/300x200'
-  },
-  {
-    id: 2,
-    title: 'Task Management App',
-    description: 'A task management application with real-time updates',
-    technologies: ['React', 'Firebase', 'Material-UI'],
-    github: 'https://github.com/yourusername/task-manager',
-    live: 'https://task-manager-demo.com',
-    image: 'https://via.placeholder.com/300x200'
-  },
-  {
-    id: 3,
-    title: 'Task Management App',
-    description: 'A task management application with real-time updates',
-    technologies: ['React', 'Firebase', 'Material-UI'],
-    github: 'https://github.com/yourusername/task-manager',
-    live: 'https://task-manager-demo.com',
-    image: 'https://via.placeholder.com/300x200'
-  },
-  {
-    id: 4,
-    title: 'Task Management App',
-    description: 'A task management application with real-time updates',
-    technologies: ['React', 'Firebase', 'Material-UI'],
-    github: 'https://github.com/yourusername/task-manager',
-    live: 'https://task-manager-demo.com',
-    image: 'https://via.placeholder.com/300x200'
-  },
-  {
-    id: 5,
-    title: 'Task Management App',
-    description: 'A task management application with real-time updates',
-    technologies: ['React', 'Firebase', 'Material-UI'],
-    github: 'https://github.com/yourusername/task-manager',
-    live: 'https://task-manager-demo.com',
-    image: 'https://via.placeholder.com/300x200'
-  },
-  {
-    id: 6,
-    title: 'Task Management App',
-    description: 'A task management application with real-time updates',
-    technologies: ['React', 'Firebase', 'Material-UI'],
-    github: 'https://github.com/yourusername/task-manager',
-    live: 'https://task-manager-demo.com',
-    image: 'https://via.placeholder.com/300x200'
+// GET all projects
+app.get('/api/projects', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        p.*, 
+        COALESCE(json_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '[]') AS technologies
+      FROM projects p
+      LEFT JOIN technologies t ON p.id = t.project_id
+      GROUP BY p.id
+      ORDER BY p.id
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching projects:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-];
-
-// Route to fetch sample portfolio data
-app.get('/api/projects', (req, res) => {
-  res.json(sampleData);
 });
+
+// GET single project
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM projects WHERE id = $1', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching project:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Start the server
 app.listen(port, () => {

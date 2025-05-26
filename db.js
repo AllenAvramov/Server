@@ -33,7 +33,7 @@ function createDBConnection() {
             database: process.env.CLOUD_DB_NAME,
             password: process.env.CLOUD_DB_PASSWORD,
             port: process.env.CLOUD_DB_PORT,
-            ssl: { rejectUnauthorized: false }
+            ssl: false
         });
     }
 

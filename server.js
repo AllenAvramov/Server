@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const createDBConnection = require('./db');
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 // Create database connection pool
 const pool = createDBConnection();

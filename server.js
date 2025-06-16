@@ -14,6 +14,11 @@ app.use(cors());
 app.use(express.json());
 
 // GET all projects
+// COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies:
+// This builds your technologies array per project:
+// json_agg(s.name) → collects all skill names (s.name) as JSON array for each project.
+// FILTER (WHERE s.name IS NOT NULL) → ignores any null names (safe guard).
+// COALESCE(..., '[]') → if no technologies found, returns an empty array instead of null.
 app.get('/api/projects', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -21,8 +26,8 @@ app.get('/api/projects', async (req, res) => {
         p.*, 
         COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies
       FROM projects p
-      LEFT JOIN technologies t ON p.id = t.project_id
-      LEFT JOIN skills s ON t.skill_id = s.id
+      JOIN technologies t ON p.id = t.project_id
+      JOIN skills s ON t.skill_id = s.id
       GROUP BY p.id
       ORDER BY p.id;
     `);
@@ -33,22 +38,6 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
-// GET single project
-app.get('/api/projects/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM projects WHERE id = $1', [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error fetching project:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // POST - Save contact form message
 app.post('/api/messages', async (req, res) => {

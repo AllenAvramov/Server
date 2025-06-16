@@ -26,8 +26,8 @@ app.get('/api/projects', async (req, res) => {
         p.*, 
         COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies
       FROM projects p
-      JOIN technologies t ON p.id = t.project_id
-      JOIN skills s ON t.skill_id = s.id
+      LEFT JOIN technologies t ON p.id = t.project_id
+      LEFT JOIN skills s ON t.skill_id = s.id
       GROUP BY p.id
       ORDER BY p.id;
     `);

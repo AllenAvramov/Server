@@ -19,11 +19,12 @@ app.get('/api/projects', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         p.*, 
-        COALESCE(json_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '[]') AS technologies
+        COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies
       FROM projects p
       LEFT JOIN technologies t ON p.id = t.project_id
+      LEFT JOIN skills s ON t.skill_id = s.id
       GROUP BY p.id
-      ORDER BY p.id
+      ORDER BY p.id;
     `);
     res.json(result.rows);
   } catch (err) {

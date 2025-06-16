@@ -84,7 +84,16 @@ app.get('/api/skills', async (req, res) => {
 // GET all about page
 app.get('/api/about-skills', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM about_skills ORDER BY id');
+    const result = await pool.query(`
+      SELECT 
+        a.id, 
+        a.type, 
+        a.skill_id, 
+        s.name
+      FROM about_skills a
+      JOIN skills s ON a.skill_id = s.id
+      ORDER BY a.id
+    `);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching about skills:', err);

@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const createDBConnection = require('./db');
-const authRoutes = require('./routes/auth');
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -14,7 +13,9 @@ const pool = createDBConnection();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/api', authRoutes);
+
+const authRoutes = require('./routes/auth');
+app.use('/api', authRoutes); // creating route /api/login . /login from auth.js
 
 // GET all projects
 // COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies:
@@ -93,7 +94,7 @@ app.get('/api/about-skills', async (req, res) => {
   }
 });
 
-const verifyToken = require('./middleware/authMiddleware');
+const verifyToken = require('./middleware/authMiddleware'); // every time i navigate between the links in admon page it will check the token
 app.get('/api/secure-data', verifyToken, (req, res) => {
   res.json({ message: `Welcome ${req.user.username}, this is data just for ADMIN!` });
 });

@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 const users = [
-  { username: 'admin', password: 'admin123' }
+  { username: process.env.USER_NAME, password: process.env.USER_PASSWORD }
 ];
 
 router.post('/login', (req, res) => {

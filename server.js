@@ -14,6 +14,10 @@ const pool = createDBConnection();
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Server is running!');
+});
+
 const authRoutes = require('./routes/auth');
 app.use('/api', authRoutes); // creating route /api/login . /login from auth.js
 

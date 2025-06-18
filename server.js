@@ -128,6 +128,52 @@ app.delete('/api/admin/messages', verifyToken, async (req, res) => {
   }
 });
 
+//delete project
+app.delete('/api/projects/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+    res.json({ message: 'Project deleted' });
+  } catch (err) {
+    console.error('Error deleting project:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST - Add new project
+app.post('/api/projects', verifyToken, async (req, res) => {
+  const { title, description, image_url, live_url, github_url, technologies } = req.body;
+
+  if (!title || !description) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO projects (title, description, image_url, live_url, github_url)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [title, description, image_url || null, live_url || null, github_url || null]
+    );
+
+    const newProjectId = result.rows[0].id;
+    if (technologies && technologies.length) {
+      for (let tech of technologies) {
+        await pool.query(
+          `INSERT INTO technologies (project_id, skill_id)
+           VALUES ($1, $2)`,
+          [newProjectId, tech]
+        );
+      }
+    }
+
+    res.status(201).json({ message: 'Project created successfully', id: newProjectId });
+  } catch (err) {
+    console.error('Error adding project:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

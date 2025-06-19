@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const createDBConnection = require('./db');
+const verifyToken = require('./middleware/authMiddleware'); // every time i navigate between the links in admon page it will check the token
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -52,6 +53,70 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
+// GET single project by id  
+app.get('/api/projects/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `
+      SELECT  p.*,
+              COALESCE(json_agg(json_build_object('id', s.id,'name', s.name))
+                       FILTER (WHERE s.id IS NOT NULL), '[]') AS technologies
+      FROM projects p
+      LEFT JOIN technologies t ON p.id = t.project_id
+      LEFT JOIN skills s       ON t.skill_id = s.id
+      GROUP BY p.id
+      HAVING p.id = $1
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching project:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// PUT (update) single project 
+app.put('/api/projects/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const { title, description, image_url, live_url, github_url, technologies } = req.body;
+
+  try {
+    // update main fields
+    await pool.query(
+      `UPDATE projects
+       SET title=$1, description=$2, image_url=$3, live_url=$4, github_url=$5
+       WHERE id=$6`,
+      [title, description, image_url, live_url, github_url, id]
+    );
+
+    // reset technologies for that project
+    await pool.query('DELETE FROM technologies WHERE project_id = $1', [id]);
+
+    // re-insert (if any)
+    if (Array.isArray(technologies) && technologies.length) {
+      const insertPromises = technologies.map(skillId =>
+        pool.query(
+          'INSERT INTO technologies (project_id, skill_id) VALUES ($1,$2)',
+          [id, skillId]
+        )
+      );
+      await Promise.all(insertPromises);
+    }
+
+    res.json({ message: 'Project updated successfully' });
+  } catch (err) {
+    console.error('Error updating project:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // POST - Save contact form message
 app.post('/api/messages', async (req, res) => {
@@ -104,7 +169,6 @@ app.get('/api/about-skills', async (req, res) => {
   }
 });
 
-const verifyToken = require('./middleware/authMiddleware'); // every time i navigate between the links in admon page it will check the token
 app.get('/api/secure-data', verifyToken, (req, res) => {
   res.json({ message: `Welcome ${req.user.username}, this is data just for ADMIN!` });
 });

@@ -13,7 +13,7 @@ const pool = createDBConnection();
 
 // Middleware
 const corsOptions = {
-  origin: '*', 
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
@@ -219,6 +219,7 @@ app.post('/api/projects', verifyToken, async (req, res) => {
   }
 
   try {
+    // Insert the new project
     const result = await pool.query(
       `INSERT INTO projects (title, description, image_url, live_url, github_url)
        VALUES ($1, $2, $3, $4, $5)
@@ -227,14 +228,16 @@ app.post('/api/projects', verifyToken, async (req, res) => {
     );
 
     const newProjectId = result.rows[0].id;
-    if (technologies && technologies.length) {
-      for (let tech of technologies) {
-        await pool.query(
-          `INSERT INTO technologies (project_id, skill_id)
-           VALUES ($1, $2)`,
-          [newProjectId, tech]
-        );
-      }
+
+    // Insert technologies if provided
+    if (Array.isArray(technologies) && technologies.length) {
+      const insertPromises = technologies.map(skillId =>
+        pool.query(
+          'INSERT INTO technologies (project_id, skill_id) VALUES ($1, $2)',
+          [newProjectId, skillId]
+        )
+      );
+      await Promise.all(insertPromises);
     }
 
     res.status(201).json({ message: 'Project created successfully', id: newProjectId });

@@ -86,15 +86,15 @@ app.get('/api/projects/:id', verifyToken, async (req, res) => {
 // PUT (update) single project 
 app.put('/api/projects/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { title, description, image_url, live_url, github_url, technologies } = req.body;
+  const { title, description, image, live, github, technologies } = req.body;
 
   try {
     // update main fields
     await pool.query(
       `UPDATE projects
-       SET title=$1, description=$2, image_url=$3, live_url=$4, github_url=$5
+       SET title=$1, description=$2, image=$3, live=$4, github=$5
        WHERE id=$6`,
-      [title, description, image_url, live_url, github_url, id]
+      [title, description, image || null, live || null, github || null, id]
     );
 
     // reset technologies for that project
@@ -212,7 +212,7 @@ app.delete('/api/projects/:id', verifyToken, async (req, res) => {
 
 // POST - Add new project
 app.post('/api/projects', verifyToken, async (req, res) => {
-  const { title, description, image_url, live_url, github_url, technologies } = req.body;
+  const { title, description, image, live, github, technologies } = req.body;
 
   if (!title || !description) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -221,10 +221,10 @@ app.post('/api/projects', verifyToken, async (req, res) => {
   try {
     // Insert the new project
     const result = await pool.query(
-      `INSERT INTO projects (title, description, image_url, live_url, github_url)
+      `INSERT INTO projects (title, description, image, live, github)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [title, description, image_url || null, live_url || null, github_url || null]
+      [title, description, image || null, live || null, github || null]
     );
 
     const newProjectId = result.rows[0].id;

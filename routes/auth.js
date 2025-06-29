@@ -20,7 +20,7 @@ router.post('/login', (req, res) => {
     { expiresIn: '1h' }
   );
 
-  console.log(`✅ Login success: Token issued to ${username}`);
+  console.log(`Login success: Token issued to ${username}`);
   res.json({ token });
 });
 

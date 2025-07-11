@@ -309,6 +309,48 @@ app.post('/api/skills', async (req, res) => {
   }
 });
 
+//to rank the projects
+app.post('/api/ratings', async (req, res) => {
+  const { project_id, rating } = req.body;
+
+  if (!project_id || ![1, 2, 3, 4, 5].includes(rating)) {
+    return res.status(400).json({ error: 'Invalid project ID or rating value' });
+  }
+
+  try {
+    await pool.query(
+      'INSERT INTO project_ratings (project_id, rating) VALUES ($1, $2)',
+      [project_id, rating]
+    );
+    res.status(201).json({ message: 'Rating added successfully' });
+  } catch (err) {
+    console.error('Error adding rating:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/ratings/:projectId', async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        COUNT(*) AS count,
+        ROUND(AVG(rating)::numeric, 1) AS average
+      FROM project_ratings
+      WHERE project_id = $1
+      `,
+      [projectId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching rating:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

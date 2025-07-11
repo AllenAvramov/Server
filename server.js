@@ -39,10 +39,13 @@ app.get('/api/projects', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         p.*, 
-        COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies
+        COALESCE(json_agg(s.name) FILTER (WHERE s.name IS NOT NULL), '[]') AS technologies,
+        COUNT(r.id) AS rating_count,
+        COALESCE(ROUND(AVG(r.rating)::numeric, 1), 0) AS average_rating
       FROM projects p
       LEFT JOIN technologies t ON p.id = t.project_id
       LEFT JOIN skills s ON t.skill_id = s.id
+      LEFT JOIN project_ratings r ON r.project_id = p.id
       GROUP BY p.id
       ORDER BY p.id;
     `);
@@ -52,6 +55,7 @@ app.get('/api/projects', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // GET single project by id  
 app.get('/api/projects/:id', verifyToken, async (req, res) => {

@@ -267,6 +267,26 @@ app.post('/api/projects', verifyToken, async (req, res) => {
   }
 });
 
+//to sopport adding technologies when we add a new project
+app.post('/api/skills', async (req, res) => {
+  const { name, category = 'other' } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Missing skill name' });
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO skills (name, category) VALUES ($1, $2) RETURNING id',
+      [name, category]
+    );
+    res.status(201).json({ id: result.rows[0].id, name, category });
+  } catch (err) {
+    console.error('Error inserting skill:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

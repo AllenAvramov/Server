@@ -86,25 +86,46 @@ app.get('/api/projects/:id', verifyToken, async (req, res) => {
 // PUT (update) single project 
 app.put('/api/projects/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { title, description, image, live, github, technologies } = req.body;
+  const {
+    title,
+    description,
+    full_description,
+    academic_track,
+    students,
+    mentor,
+    youtube_url,
+    image,
+    live,
+    github,
+    technologies
+  } = req.body;
 
   try {
-    // update main fields
+   // all the feilds
     await pool.query(
       `UPDATE projects
-       SET title=$1, description=$2, image=$3, live=$4, github=$5
-       WHERE id=$6`,
-      [title, description, image || null, live || null, github || null, id]
+       SET title=$1,
+           description=$2,
+           full_description=$3,
+           academic_track=$4,
+           students=$5,
+           mentor=$6,
+           youtube_url=$7,
+           image=$8,
+           live=$9,
+           github=$10
+       WHERE id=$11`,
+      [title, description, full_description, academic_track, students, mentor, youtube_url, image || null, live || null, github || null, id]
     );
 
-    // reset technologies for that project
+    // delete what we dont neeed, the old
     await pool.query('DELETE FROM technologies WHERE project_id = $1', [id]);
 
-    // re-insert (if any)
+    // add new
     if (Array.isArray(technologies) && technologies.length) {
       const insertPromises = technologies.map(skillId =>
         pool.query(
-          'INSERT INTO technologies (project_id, skill_id) VALUES ($1,$2)',
+          'INSERT INTO technologies (project_id, skill_id) VALUES ($1, $2)',
           [id, skillId]
         )
       );
@@ -117,6 +138,7 @@ app.put('/api/projects/:id', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // POST - Save contact form message
 app.post('/api/messages', async (req, res) => {

@@ -212,24 +212,44 @@ app.delete('/api/projects/:id', verifyToken, async (req, res) => {
 
 // POST - Add new project
 app.post('/api/projects', verifyToken, async (req, res) => {
-  const { title, description, image, live, github, technologies } = req.body;
+  const {
+    title,
+    description,
+    full_description,
+    academic_track,
+    students,
+    mentor,
+    youtube_url,
+    image,
+    live,
+    github,
+    technologies
+  } = req.body;
 
   if (!title || !description) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    // Insert the new project
     const result = await pool.query(
-      `INSERT INTO projects (title, description, image, live, github)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id`,
-      [title, description, image || null, live || null, github || null]
+      `INSERT INTO projects (
+        title,
+        description,
+        full_description,
+        academic_track,
+        students,
+        mentor,
+        youtube_url,
+        image,
+        live,
+        github
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      RETURNING id`,
+      [title, description, full_description, academic_track, students, mentor, youtube_url, image || null, live || null, github || null]
     );
 
     const newProjectId = result.rows[0].id;
 
-    // Insert technologies if provided
     if (Array.isArray(technologies) && technologies.length) {
       const insertPromises = technologies.map(skillId =>
         pool.query(
